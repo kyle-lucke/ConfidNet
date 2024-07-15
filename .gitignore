@@ -15,3 +15,12 @@ ipython_config.py
 # Data folder
 data/
 notebooks/data/
+
+# output files
+*.out
+
+# emacs files:
+*~
+
+# shared object files:
+*.so

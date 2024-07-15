@@ -1,4 +1,7 @@
 # Addressing Failure Prediction by Learning Model Confidence
+
+**NOTE: I AM NOT THE ORIGINAL AUTHOR**. See the upstream fork for the original repository.
+
  [Charles Corbière](https://chcorbi.github.io/),  [Nicolas Thome](http://cedric.cnam.fr/~thomen/), [Avner Bar-Hen](https://ab-h.github.io/), [Matthieu Cord](http://webia.lip6.fr/~cord/), [Patrick Pérez](https://ptrckprz.github.io/) \
 *Neural Information Processing Systems (NeurIPS), 2019*
 

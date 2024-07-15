@@ -1,38 +1,36 @@
 # Data parameters
 data:
-    dataset: cifar10
-    data_dir: data/cifar10-data
+    dataset: cifar100
+    data_dir: data/cifar100-data
     input_size: [32,32]
     input_channels: 3
-    num_classes: 10
+    num_classes: 100
     valid_size: 0.1
 
 # Training parameters
 training:
-    output_folder: results/logs/cifar10/cifar10_pretrained
+    output_folder: results/logs/cifar100/cifar100_selfconfid
     task: classification
-    learner: default
-    nb_epochs: 250
+    learner: selfconfid
+    nb_epochs: 500
     batch_size: 128
     loss:
-        name: cross_entropy
+        name: selfconfid_mse
+        weighting: 1
     optimizer:
-        name: sgd
-        lr: 0.001
-        momentum: 0.9
-        weight_decay: 0.0005
+        name: adam
+        lr: 0.0001
     lr_schedule:
-        # name: multi_step
-        # milestones: [50, 120, 200, 250]
+    ft_on_val: False
     metrics: ['accuracy', 'auc', 'ap_success', 'ap_errors']
     pin_memory: False
     num_workers: 3
     augmentations:
         hflip: True
-        rotate: 15
+        random_crop: 32
         normalize: [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]]
 
 # Model parameters
 model:
-    name: vgg16
-    resume: vgg16
+    name: vgg16_selfconfid_classic
+    resume: results/logs/cifar100/cifar100_pretrained/model_epoch_144.ckpt

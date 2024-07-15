@@ -1,37 +1,40 @@
 # Data parameters
 data:
-    dataset: svhn
-    data_dir: data/svhn-data
+    dataset: cifar100
+    data_dir: data/cifar100-data
     input_size: [32,32]
     input_channels: 3
-    num_classes: 10
+    num_classes: 100
     valid_size: 0.1
 
 # Training parameters
 training:
-    output_folder: results/logs/svhn/svhn_pretrained
+    output_folder: results/logs/cifar100/cifar100_resnet32_pretrained
     task: classification
     learner: default
-    nb_epochs: 100
+    nb_epochs: 200
     batch_size: 128
     loss:
         name: cross_entropy
     optimizer:
         name: sgd
-        lr: 0.001
+        lr: 0.1
         momentum: 0.9
-        weight_decay: 0.0001
+        weight_decay: 0.0005
     lr_schedule:
+        name: multi_step
+        milestones: [60, 120, 160]
+        gamma: 0.2
     smoother: 0.1
     metrics: ['accuracy', 'auc', 'ap_success', 'ap_errors']
     pin_memory: False
     num_workers: 3
     augmentations:
-        #hflip: True
-        normalize: [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]]
+        hflip: True
+        random_crop: 32
+        normalize: [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]]
 
 # Model parameters
 model:
-    name: small_convnet_svhn
-    resume:
-    feature_dim: 512
+    name: resnet32
+    resume: 

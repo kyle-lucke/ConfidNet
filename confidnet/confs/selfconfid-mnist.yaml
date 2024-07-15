@@ -9,29 +9,27 @@ data:
 
 # Training parameters
 training:
-    output_folder: results/logs/mnist/mnist_pretrained
+    output_folder: results/logs/mnist/mnist_selfconfid
     task: classification
-    learner: default
-    nb_epochs: 100
+    learner: selfconfid
+    nb_epochs: 500
     batch_size: 128
     loss:
-        name: cross_entropy
+        name: selfconfid_mse
+        weighting: 1
     optimizer:
-        name: sgd
-        lr: 0.001
-        momentum: 0.9
-        weight_decay: 0.0001
+        name: adam
+        lr: 0.0001
     lr_schedule:
-    smoother: 0.1
+    ft_on_val: False
     metrics: ['accuracy', 'auc', 'ap_success', 'ap_errors']
     pin_memory: False
     num_workers: 3
     augmentations:
         normalize: [[0.1307,], [0.3081,]]
 
-
 # Model parameters
 model:
-    name: small_convnet_mnist
-    resume:
-
+    name: small_convnet_mnist_selfconfid_classic
+    resume: results/logs/mnist/mnist_pretrained/model_epoch_064.ckpt
+    

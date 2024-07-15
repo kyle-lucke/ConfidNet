@@ -1,4 +1,4 @@
-import structured_map_ranking_loss
+# import structured_map_ranking_loss
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -83,36 +83,36 @@ class FocalLoss(nn.modules.loss._Loss):
         return torch.mean(loss)
 
 
-class StructuredMAPRankingLossFunction(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, input, target, mask):
-        loss, ranking_lai = structured_map_ranking_loss.forward(input, target, mask)
-        ctx.save_for_backward(input, target, mask, ranking_lai)
-        return loss
+# class StructuredMAPRankingLossFunction(torch.autograd.Function):
+#     @staticmethod
+#     def forward(ctx, input, target, mask):
+#         loss, ranking_lai = structured_map_ranking_loss.forward(input, target, mask)
+#         ctx.save_for_backward(input, target, mask, ranking_lai)
+#         return loss
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        input, target, mask, ranking_lai = ctx.saved_variables
-        grad_input = structured_map_ranking_loss.backward(
-            grad_output, input, target, mask, ranking_lai
-        )
-        return grad_input, None, None
+#     @staticmethod
+#     def backward(ctx, grad_output):
+#         input, target, mask, ranking_lai = ctx.saved_variables
+#         grad_input = structured_map_ranking_loss.backward(
+#             grad_output, input, target, mask, ranking_lai
+#         )
+#         return grad_input, None, None
 
 
-class StructuredMAPRankingLoss(nn.modules.loss._Loss):
-    def __init__(self, device, config_args):
-        self.nb_classes = config_args["data"]["num_classes"]
-        self.device = device
-        super().__init__()
+# class StructuredMAPRankingLoss(nn.modules.loss._Loss):
+#     def __init__(self, device, config_args):
+#         self.nb_classes = config_args["data"]["num_classes"]
+#         self.device = device
+#         super().__init__()
 
-    def forward(self, input, target):
-        confidence = input[1]
-        mask = torch.ones_like(target).unsqueeze(dim=1)
-        return StructuredMAPRankingLossFunction.apply(
-            confidence,
-            (input[0].argmax(dim=1) == target).float().unsqueeze(dim=1),
-            mask.to(dtype=torch.uint8),
-        )
+#     def forward(self, input, target):
+#         confidence = input[1]
+#         mask = torch.ones_like(target).unsqueeze(dim=1)
+#         return StructuredMAPRankingLossFunction.apply(
+#             confidence,
+#             (input[0].argmax(dim=1) == target).float().unsqueeze(dim=1),
+#             mask.to(dtype=torch.uint8),
+#         )
 
 
 class OODConfidenceLoss(nn.modules.loss._Loss):
@@ -170,6 +170,6 @@ CUSTOM_LOSS = {
     "selfconfid_tcpr": SelfConfidTCPRLoss,
     "selfconfid_bce": SelfConfidBCELoss,
     "focal": FocalLoss,
-    "ranking": StructuredMAPRankingLoss,
+#     "ranking": StructuredMAPRankingLoss,
     "ood_confidence": OODConfidenceLoss,
 }

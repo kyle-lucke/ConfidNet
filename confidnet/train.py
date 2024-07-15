@@ -47,7 +47,7 @@ def main():
                 abort=True,
             ):
                 rmtree(config_args["training"]["output_folder"])
-            os.mkdir(config_args["training"]["output_folder"])
+            os.makedirs(config_args["training"]["output_folder"])
             start_epoch = 1
         else:
             last_ckpt = list_previous_ckpt[-1]
@@ -55,7 +55,7 @@ def main():
             start_epoch = checkpoint["epoch"] + 1
     else:
         LOGGER.info("Starting from scratch")
-        os.mkdir(config_args["training"]["output_folder"])
+        os.makedirs(config_args["training"]["output_folder"])
         start_epoch = 1
 
     # Load dataset

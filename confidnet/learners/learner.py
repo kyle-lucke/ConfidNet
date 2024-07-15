@@ -96,7 +96,8 @@ class AbstractLeaner:
 
     def set_scheduler(self):
         self.scheduler = get_scheduler(self.optimizer, self.lr_schedule, self.last_epoch)
-
+        LOGGER.info(f'INFO: scheduler={self.scheduler}')
+        
     def load_checkpoint(self, state_dict, strict=True):
         self.model.load_state_dict(state_dict, strict=strict)
 

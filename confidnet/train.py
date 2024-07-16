@@ -5,7 +5,7 @@ from shutil import copyfile, rmtree
 import click
 import torch
 
-from confidnet.loaders import get_loader
+from loaders import get_loader
 from confidnet.learners import get_learner
 from confidnet.utils.logger import get_logger
 from confidnet.utils.misc import load_yaml
@@ -20,43 +20,13 @@ def main():
     parser.add_argument(
         "--no_cuda", action="store_true", default=False, help="disables CUDA training"
     )
-    parser.add_argument(
-        "--from_scratch",
-        "-f",
-        action="store_true",
-        default=False,
-        help="Force training from scratch",
-    )
+    
     args = parser.parse_args()
 
     config_args = load_yaml(args.config_path)
+
     # Device configuration
     device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
-
-    # Start from scatch or resume existing model and optim
-    if config_args["training"]["output_folder"].exists():
-        list_previous_ckpt = sorted(
-            [f for f in os.listdir(config_args["training"]["output_folder"]) if "model_epoch" in f]
-        )
-        if args.from_scratch or not list_previous_ckpt:
-            LOGGER.info("Starting from scratch")
-            if click.confirm(
-                "Removing current training directory ? ({}).".format(
-                    config_args["training"]["output_folder"]
-                ),
-                abort=True,
-            ):
-                rmtree(config_args["training"]["output_folder"])
-            os.makedirs(config_args["training"]["output_folder"])
-            start_epoch = 1
-        else:
-            last_ckpt = list_previous_ckpt[-1]
-            checkpoint = torch.load(config_args["training"]["output_folder"] / str(last_ckpt))
-            start_epoch = checkpoint["epoch"] + 1
-    else:
-        LOGGER.info("Starting from scratch")
-        os.makedirs(config_args["training"]["output_folder"])
-        start_epoch = 1
 
     # Load dataset
     LOGGER.info(f"Loading dataset {config_args['data']['dataset']}")
@@ -65,6 +35,9 @@ def main():
     # Make loaders
     dloader.make_loaders()
 
+    # force train from scratch, so set start epoch to zero.
+    start_epoch = 0
+    
     # Set learner
     LOGGER.warning(f"Learning type: {config_args['training']['learner']}")
     learner = get_learner(
@@ -75,29 +48,13 @@ def main():
         start_epoch,
         device,
     )
-
-    # Resume existing model or from pretrained one
-    if start_epoch > 1:
-        LOGGER.warning(f"Resuming from last checkpoint: {last_ckpt}")
-        learner.model.load_state_dict(checkpoint["model_state_dict"])
-        learner.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-    elif config_args["model"]["resume"]:
-        LOGGER.info(f"Loading pretrained model from {config_args['model']['resume']}")
-        if config_args["model"]["resume"] == "vgg16":
-            learner.model.init_vgg16_params()
-        else:
-            pretrained_checkpoint = torch.load(config_args["model"]["resume"])
-            uncertainty_checkpoint = config_args["model"].get("uncertainty", None)
-            if uncertainty_checkpoint:
-                LOGGER.warning("Cloning training phase")
-                learner.load_checkpoint(
-                    pretrained_checkpoint["model_state_dict"],
-                    torch.load(uncertainty_checkpoint)["model_state_dict"],
-                    strict=False,
-                )
-            else:
-                learner.load_checkpoint(pretrained_checkpoint["model_state_dict"], strict=False)
-
+    
+    # Load pretrained base model
+    pretrained_checkpoint = torch.load(config_args["model"]["resume"], map_location=device)
+    
+    # learner.load_checkpoint(pretrained_checkpoint["model_state_dict"], strict=False)
+    learner.load_checkpoint(pretrained_checkpoint, strict=False)
+    
     # Log files
     LOGGER.info(f"Using model {config_args['model']['name']}")
     learner.model.print_summary(
@@ -129,7 +86,6 @@ def main():
     # Start training
     for epoch in range(start_epoch, config_args["training"]["nb_epochs"] + 1):
         learner.train(epoch)
-
 
 if __name__ == "__main__":
     main()

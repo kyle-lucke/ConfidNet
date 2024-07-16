@@ -91,9 +91,10 @@ class AbstractDataLoader:
             # Splitting indices
             elif self.resume_folder:
                 LOGGER.warning("Loading existing train-val split indices from ORIGINAL training")
-                train_idx = np.load(self.resume_folder / "train_idx.npy")
-                val_idx = np.load(self.resume_folder / "val_idx.npy")
+                train_idx = np.load(self.resume_folder / "trainset_meta_idxs.npy")
+                val_idx = np.load(self.resume_folder / "val_idxs.npy")
             else:
+                raise Exception('ERROR: trying to create new train/valid split')
                 split = int(np.floor(self.valid_size * num_train))
                 np.random.seed(42)
                 np.random.shuffle(indices)
@@ -105,6 +106,7 @@ class AbstractDataLoader:
             val_sampler = SubsetRandomSampler(val_idx)
             # Special case where val set is used for training
             if self.ft_on_val:
+                raise Exception('ERROR: trying to use validation set as training.')
                 LOGGER.warning("Using val set as training")
                 train_sampler = val_sampler
             # Make loaders

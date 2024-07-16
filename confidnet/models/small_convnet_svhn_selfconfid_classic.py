@@ -10,23 +10,23 @@ class SmallConvNetSVHNSelfConfidClassic(AbstractModel):
         super().__init__(config_args, device)
         self.feature_dim = config_args["model"]["feature_dim"]
         self.conv1 = Conv2dSame(config_args["data"]["input_channels"], 32, 3)
-        self.conv1_bn = nn.BatchNorm2d(32)
+        self.bn1 = nn.BatchNorm2d(32)
         self.conv2 = Conv2dSame(32, 32, 3)
-        self.conv2_bn = nn.BatchNorm2d(32)
+        self.bn2 = nn.BatchNorm2d(32)
         self.maxpool1 = nn.MaxPool2d(2)
         self.dropout1 = nn.Dropout(0.3)
 
         self.conv3 = Conv2dSame(32, 64, 3)
-        self.conv3_bn = nn.BatchNorm2d(64)
+        self.bn3 = nn.BatchNorm2d(64)
         self.conv4 = Conv2dSame(64, 64, 3)
-        self.conv4_bn = nn.BatchNorm2d(64)
+        self.bn4 = nn.BatchNorm2d(64)
         self.maxpool2 = nn.MaxPool2d(2)
         self.dropout2 = nn.Dropout(0.3)
 
         self.conv5 = Conv2dSame(64, 128, 3)
-        self.conv5_bn = nn.BatchNorm2d(128)
+        self.bn5 = nn.BatchNorm2d(128)
         self.conv6 = Conv2dSame(128, 128, 3)
-        self.conv6_bn = nn.BatchNorm2d(128)
+        self.bn6 = nn.BatchNorm2d(128)
         self.maxpool3 = nn.MaxPool2d(2)
         self.dropout3 = nn.Dropout(0.3)
 
@@ -42,9 +42,9 @@ class SmallConvNetSVHNSelfConfidClassic(AbstractModel):
 
     def forward(self, x):
         out = F.relu(self.conv1(x))
-        out = self.conv1_bn(out)
+        out = self.bn1(out)
         out = F.relu(self.conv2(out))
-        out = self.conv2_bn(out)
+        out = self.bn2(out)
         out = self.maxpool1(out)
         if self.mc_dropout:
             out = F.dropout(out, 0.3, training=self.training)
@@ -52,9 +52,9 @@ class SmallConvNetSVHNSelfConfidClassic(AbstractModel):
             out = self.dropout1(out)
 
         out = F.relu(self.conv3(out))
-        out = self.conv3_bn(out)
+        out = self.bn3(out)
         out = F.relu(self.conv4(out))
-        out = self.conv4_bn(out)
+        out = self.bn4(out)
         out = self.maxpool2(out)
         if self.mc_dropout:
             out = F.dropout(out, 0.3, training=self.training)
@@ -62,9 +62,9 @@ class SmallConvNetSVHNSelfConfidClassic(AbstractModel):
             out = self.dropout2(out)
 
         out = F.relu(self.conv5(out))
-        out = self.conv5_bn(out)
+        out = self.bn5(out)
         out = F.relu(self.conv6(out))
-        out = self.conv6_bn(out)
+        out = self.bn6(out)
         out = self.maxpool3(out)
         if self.mc_dropout:
             out = F.dropout(out, 0.3, training=self.training)

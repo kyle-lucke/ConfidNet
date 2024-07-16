@@ -104,7 +104,7 @@ class ResNetSelfConfidClassic(AbstractModel):
         self.uncertainty4 = nn.Linear(400, 400)
         self.uncertainty5 = nn.Linear(400, 1)
         
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU(inplace=False)
 
         self.pool = nn.AvgPool2d(8)
         
@@ -148,6 +148,5 @@ if __name__ == "__main__":
     fake_inp = torch.rand(2, 3, 32, 32)
 
     res = resnet(fake_inp)
-
 
     print(res.shape)

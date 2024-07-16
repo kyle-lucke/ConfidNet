@@ -33,3 +33,5 @@ model:
     name: small_convnet_svhn_selfconfid_classic
     feature_dim: 512
     resume: trained-base-models/svhn-cnn/best.pth
+
+seed: 0

@@ -33,3 +33,4 @@ model:
     name: resnet32_selfconfid_classic
     resume: trained-base-models/cifar10-resnet32/best.pth
 
+seed: 0

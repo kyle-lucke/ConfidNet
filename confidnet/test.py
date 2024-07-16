@@ -76,8 +76,8 @@ def main():
     )
 
     # Initialize and load model
-    ckpt_path = config_args["training"]["output_folder"] / f"model_epoch_{args.epoch:03d}.ckpt"
-    checkpoint = torch.load(ckpt_path)
+    ckpt_path = config_args["training"]["output_folder"] / f"best.ckpt"
+    checkpoint = torch.load(ckpt_path, map_location=device)
     learner.model.load_state_dict(checkpoint["model_state_dict"])
 
     # Get scores

@@ -57,6 +57,8 @@ class AbstractLeaner:
         self.last_epoch = start_epoch - 2
         self.criterion, self.scheduler, self.optimizer, self.tb_logger = None, None, None, None
 
+        self.best_val_loss = float('inf')
+        
         # Initialize model
         self.model = get_model(config_args, self.device).to(self.device)
         # Set optimizer
@@ -96,7 +98,6 @@ class AbstractLeaner:
 
     def set_scheduler(self):
         self.scheduler = get_scheduler(self.optimizer, self.lr_schedule, self.last_epoch)
-        LOGGER.info(f'INFO: scheduler={self.scheduler}')
         
     def load_checkpoint(self, state_dict, strict=True):
         self.model.load_state_dict(state_dict, strict=strict)
@@ -110,7 +111,7 @@ class AbstractLeaner:
                 else self.model.state_dict(),
                 "optimizer_state_dict": self.optimizer.state_dict(),
             },
-            self.output_folder / f"model_epoch_{epoch:03d}.ckpt",
+            self.output_folder / f"best.ckpt",
         )
 
     def save_tb(self, logs_dict):

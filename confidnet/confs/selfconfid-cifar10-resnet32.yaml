@@ -26,12 +26,10 @@ training:
     pin_memory: False
     num_workers: 3
     augmentations:
-        hflip: True
-        random_crop: 32
         normalize: [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]]
 
 # Model parameters
 model:
     name: resnet32_selfconfid_classic
-    resume: results/logs/cifar10/cifar10_resnet32_pretrained/model_epoch_193.ckpt
+    resume: trained-base-models/cifar10-resnet32/best.pth
 

@@ -32,4 +32,4 @@ training:
 model:
     name: small_convnet_svhn_selfconfid_classic
     feature_dim: 512
-    resume: results/logs/svhn/svhn_pretrained/model_epoch_058.ckpt
+    resume: trained-base-models/svhn-cnn/best.pth

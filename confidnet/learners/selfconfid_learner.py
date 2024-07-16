@@ -78,6 +78,7 @@ class SelfConfidLearner(AbstractLeaner):
 
         # Eval on epoch end
         scores = metrics.get_scores(split="train")
+        
         logs_dict = OrderedDict(
             {
                 "epoch": {"value": epoch, "string": f"{epoch:03}"},
@@ -102,27 +103,21 @@ class SelfConfidLearner(AbstractLeaner):
         }
         for sv in scores_val:
             logs_dict[sv] = scores_val[sv]
-
-        # Test scores
-        test_losses, scores_test = self.evaluate(self.test_loader, self.prod_test_len, split="test")
-        logs_dict["test/loss_confid"] = {
-            "value": test_losses["loss_confid"].item() / self.nsamples_test,
-            "string": f"{(test_losses['loss_confid'].item() / self.nsamples_test):05.4e}",
-        }
-        for st in scores_test:
-            logs_dict[st] = scores_test[st]
-
+        
         # Print metrics
         misc.print_dict(logs_dict)
 
-        # Save the model checkpoint
-        self.save_checkpoint(epoch)
+        if logs_dict["val/loss_confid"]["value"] < self.best_val_loss:
 
+            LOGGER.info(f'Validation loss improved from {self.best_val_loss:.4e} to {logs_dict["val/loss_confid"]["value"]:.4e}, saving model.')
+            
+            # Save the model checkpoint
+            self.save_checkpoint(epoch)
+
+            self.best_val_loss = logs_dict["val/loss_confid"]['value']
+            
         # CSV logging
         misc.csv_writter(path=self.output_folder / "logs.csv", dic=OrderedDict(logs_dict))
-
-        # Tensorboard logging
-        self.save_tb(logs_dict)
 
         # Scheduler step
         if self.scheduler:

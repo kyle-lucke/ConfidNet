@@ -1,10 +1,23 @@
-import csv
 import os
+import csv
+import random
 from pathlib import Path
 
 import torch
 import yaml
+import numpy as np
 
+def set_seed(seed):
+
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 def one_hot_embedding(labels, num_classes):
     """Embedding labels to one-hot form.

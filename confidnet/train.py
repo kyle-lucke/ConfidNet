@@ -8,7 +8,7 @@ import torch
 from loaders import get_loader
 from confidnet.learners import get_learner
 from confidnet.utils.logger import get_logger
-from confidnet.utils.misc import load_yaml
+from confidnet.utils.misc import load_yaml, set_seed
 from confidnet.utils.tensorboard_logger import TensorboardLogger
 
 LOGGER = get_logger(__name__, level="DEBUG")
@@ -25,6 +25,10 @@ def main():
 
     config_args = load_yaml(args.config_path)
 
+    seed = config_args.get('seed', 0)
+
+    set_seed(seed)
+    
     # Device configuration
     device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
 
@@ -60,7 +64,14 @@ def main():
     learner.model.print_summary(
         input_size=tuple([shape_i for shape_i in learner.train_loader.dataset[0][0].shape])
     )
-    learner.tb_logger = TensorboardLogger(config_args["training"]["output_folder"])
+
+    # create output directory if not exists
+    if os.path.exists(config_args["training"]["output_folder"]):
+      rmtree(config_args["training"]["output_folder"])
+      
+    # create output directory
+    os.makedirs(config_args["training"]["output_folder"])
+    
     copyfile(
         args.config_path, config_args["training"]["output_folder"] / f"config_{start_epoch}.yaml"
     )

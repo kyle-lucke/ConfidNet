@@ -1,3 +1,5 @@
+import os
+import json
 import argparse
 from pathlib import Path
 
@@ -18,10 +20,10 @@ LOGGER = get_logger(__name__, level="DEBUG")
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path", "-c", type=str, default=None, help="Path for config yaml")
+
+    parser.add_argument('--beta', type=float, default=1.0)
     
     args = parser.parse_args()
-
-    args.mode = 'confidnet'
     
     config_args = load_yaml(args.config_path)
 
@@ -34,7 +36,8 @@ def main():
         "ap_success",
         "ap_errors",
         "fpr_at_95tpr",
-        "aurc"
+        "aurc",
+        "spec_sens"
     ]
 
     if config_args["training"]["task"] == "segmentation":
@@ -62,15 +65,15 @@ def main():
     learner.model.load_state_dict(checkpoint["model_state_dict"])
 
     # Get scores
-    LOGGER.info(f"Inference mode: {args.mode}")
+    LOGGER.info(f"Inference mode: confidnet")
 
     _, scores_test = learner.evaluate(
         learner.test_loader,
         learner.prod_test_len,
         split="test",
-        mode=args.mode,
-        samples=args.samples,
-        verbose=True,
+        mode='confidnet',
+        samples=0,
+        verbose=True
     )
 
     LOGGER.info("Results")
@@ -80,6 +83,11 @@ def main():
         print(scores_test[st])
         print("----------------------------------------------------------------")
 
+    save_scores = {k.replace('test/', '') : v['value'] for k, v in scores_test.items()}
+
+    json.dump(save_scores,
+              open(os.path.join(config_args["training"]["output_folder"],
+                                'test_metrics.json'), 'w'))
 
 if __name__ == "__main__":
     main()

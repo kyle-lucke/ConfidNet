@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import average_precision_score, roc_auc_score, auc
+from sklearn.metrics import average_precision_score, roc_auc_score, auc, confusion_matrix
 
 
 def _fast_hist(label_true, label_pred, n_class):
@@ -9,23 +9,102 @@ def _fast_hist(label_true, label_pred, n_class):
     ).reshape(n_class, n_class)
     return hist
 
+# also known as recall or true positive rate (TPR)
+def sensitivity(tp, fn):
+    return tp / (tp + fn)
+
+# Also known as selectivity, or true negative rate (TNR)
+def specificity(tn, fp):
+    return tn / (tn + fp)
+
+def threshold(preds, tau):
+    if isinstance(preds, np.ndarray):
+        return np.where(preds>tau, 1.0, 0.0)
+
+    elif torch.is_tensor(preds):
+        return torch.where(preds>tau, 1.0, 0.0)
+
+    else:
+        raise TypeError(f"ERROR: preds is expected to be of type (torch.tensor, numpy.ndarray) but is type {type(preds)}")
+
+# beta > 1 gives more weight to specificity, while beta < 1 favors
+# sensitivity. For example, beta = 2 makes specificity twice as important as
+# sensitivity, while beta = 0.5 does the opposite.
+# eqn. source: F-score wikipedia page (https://en.wikipedia.org/wiki/F-score)
+def f_score_sens_spec(sensitivity, specificity, beta=1.0):
+
+    # return (1 + beta**2) * ( (precision * recall) / ( (beta**2 * precision) + recall ) )
+
+    return (1 + beta**2) * ( (sensitivity * specificity) / ( (beta**2 * sensitivity) + specificity ) )
 
 class Metrics:
+
+    '''
+
+    self.metrics: list of strings corresponding to the metrics to be calculated
+    
+    self.len_dataset: number of total elements in the dataset
+    
+    self.n_classes: number of classes in the dataset
+    
+    self.accurate: indicator for correct base model predicitons. If True,
+    predicted label of base model matches the ground truth label.
+
+    self.errors: indicator for incorrect base model predicitons. If True,
+    predicted label of base model does not match the ground truth label.
+
+    self.proba_pred: predicted confidence values by base model. 
+
+    self.accuracy: number of correctly classified data samples
+
+    self.confusion_matrix: in the case of segmentation dataset,
+    confusion matrix of pixel predictions vs GT labels
+
+    self.tps, self.fps, self.tns, self.fns: accumulated number number
+    of true positivies, false positives, true negatives, and false
+    negatives, respectively for miscalssication prediction
+
+    '''
+    
     def __init__(self, metrics, len_dataset, n_classes):
+        
         self.metrics = metrics
         self.len_dataset = len_dataset
         self.n_classes = n_classes
         self.accurate, self.errors, self.proba_pred = [], [], []
         self.accuracy = 0
-        self.current_miou = 0
         self.confusion_matrix = np.zeros((self.n_classes, self.n_classes))
-
+        
+        self.tps = 0
+        self.fps = 0
+        self.tns = 0
+        self.fns = 0 
+        
     def update(self, pred, target, confidence):
-        self.accurate.extend(pred.eq(target.view_as(pred)).detach().to("cpu").numpy())
-        self.accuracy += pred.eq(target.view_as(pred)).sum().item()
-        self.errors.extend((pred != target.view_as(pred)).detach().to("cpu").numpy())
-        self.proba_pred.extend(confidence.detach().to("cpu").numpy())
 
+        target = target.view_as(pred).detach().to('cpu').numpy()
+        pred = pred.detach().to('cpu').numpy()
+        confidence = confidence.detach().to("cpu").numpy()
+
+        accurate_b = pred == target
+        
+        self.accurate.extend(accurate_b)
+        self.accuracy += np.sum(accurate_b)
+        self.errors.extend( pred != target )
+        self.proba_pred.extend(confidence)
+
+        msclf_labels = pred == target
+
+        # assume confidence is true probability value:
+        predicted_labels = threshold(confidence, tau=0.5)
+        
+        tn, fp, fn, tp = confusion_matrix(msclf_labels, predicted_labels).ravel()
+        
+        self.tps += tp
+        self.fps += fp
+        self.tns += tn
+        self.fns += fn
+        
         if "mean_iou" in self.metrics:
             pred = pred.cpu().numpy().flatten()
             target = target.cpu().numpy().flatten()
@@ -108,4 +187,23 @@ class Metrics:
             eaurc = aurc - ((1. - accuracy) + accuracy*np.log(accuracy))
             scores[f"{split}/aurc"] = {"value": aurc, "string": f"{aurc*1000:01.2f}"}
             scores[f"{split}/e-aurc"] = {"value": eaurc, "string": f"{eaurc*1000:01.2f}"}
+
+        if 'spec_sens' in self.metrics:
+
+            specificity_value = specificity(self.tns, self.fps)
+            sensitivity_value = sensitivity(self.tps, self.fns)
+
+            for beta in [1.0, 2.0]:
+            
+                f_beta_spec_sens = f_score_sens_spec(sensitivity_value,
+                                                     specificity_value, beta=beta)
+            
+                scores[f'{split}/f_beta_spec_sens@{beta}'] = {'value': f_beta_spec_sens ,
+                                                              'string': f'{f_beta_spec_sens:.4f}' }         
+            scores[f'{split}/specificity'] = {'value': specificity_value,
+                                              'string': f'{specificity_value:.4f}' }
+            
+            scores[f'{split}/sensitivity'] = {'value': sensitivity_value,
+                                              'string': f'{sensitivity_value:.4f}' }
+                        
         return scores

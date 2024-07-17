@@ -21,7 +21,7 @@ def main():
     
     args = parser.parse_args()
 
-    args.mode = confidnet
+    args.mode = 'confidnet'
     
     config_args = load_yaml(args.config_path)
 

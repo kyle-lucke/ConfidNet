@@ -44,7 +44,7 @@ def main():
         config_args["training"]["metrics"].append("mean_iou")
 
     # Device configuration
-    device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load dataset
     LOGGER.info(f"Loading dataset {config_args['data']['dataset']}")
@@ -76,15 +76,11 @@ def main():
         verbose=True
     )
 
-    LOGGER.info("Results")
-    print("----------------------------------------------------------------")
-    for st in scores_test:
-        print(st)
-        print(scores_test[st])
-        print("----------------------------------------------------------------")
-
     save_scores = {k.replace('test/', '') : v['value'] for k, v in scores_test.items()}
 
+    for k, v in save_scores.items():
+        print(f'{k}: {v:.4f}')
+    
     json.dump(save_scores,
               open(os.path.join(config_args["training"]["output_folder"],
                                 'test_metrics.json'), 'w'))

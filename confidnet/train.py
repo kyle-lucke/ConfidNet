@@ -9,7 +9,7 @@ from loaders import get_loader
 from confidnet.learners import get_learner
 from confidnet.utils.logger import get_logger
 from confidnet.utils.misc import load_yaml, set_seed
-from confidnet.utils.tensorboard_logger import TensorboardLogger
+# from confidnet.utils.tensorboard_logger import TensorboardLogger
 
 LOGGER = get_logger(__name__, level="DEBUG")
 

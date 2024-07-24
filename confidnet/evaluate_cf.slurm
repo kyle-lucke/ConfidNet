@@ -3,7 +3,7 @@
 # # Resource request
 #SBATCH -p gpu-mxian
 #SBATCH --gpus 1
-#SBATCH -o eval_cf_%j.out
+#SBATCH -o evaluate_cf.out
 
 # change directory to directory we submit job from:
 cd $SLURM_SUBMIT_DIR
@@ -16,10 +16,10 @@ conda activate torch-cn
 # python3 test.py -c results/logs/mnist/mnist_selfconfid/config_1.yaml -e 390 > mnist_cf_test_cf.out
 
 # SVHN
-python3 test.py -c results/logs/svhn/svhn_selfconfid/config_0.yaml -e 414 > svhn_cf_test.out
+python3 test.py -c results/logs/svhn/svhn_selfconfid/config_0.yaml > svhn_cf_test.out
 
 # CIFAR10
-python3 test.py -c results/logs/resnet32/resnet32_selfconfid/config_0.yaml -e 414 > resnet32_cf_test.out
+python3 test.py -c results/logs/cifar10/cifar10_resnet32_selfconfid/config_0.yaml > resnet32_cf_test.out
 
 # CIFAR10
 # python3 test.py -c  -e 448

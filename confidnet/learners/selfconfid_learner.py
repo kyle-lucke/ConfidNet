@@ -4,11 +4,12 @@ from collections import OrderedDict
 import numpy as np
 import torch
 from tqdm import tqdm
+from sklearn.metrics import confusion_matrix
 
 from confidnet.learners.learner import AbstractLeaner
 from confidnet.utils import misc
 from confidnet.utils.logger import get_logger
-from confidnet.utils.metrics import Metrics
+from confidnet.utils.metrics import Metrics, sensitivity, specificity, threshold, f_score_sens_spec
 
 LOGGER = get_logger(__name__, level="DEBUG")
 
@@ -20,15 +21,14 @@ class SelfConfidLearner(AbstractLeaner):
         self.disable_bn(verbose=True)
         if self.config_args["model"].get("uncertainty", None):
             self.disable_dropout(verbose=True)
-
+            
     def train(self, epoch):
         self.model.train()
         self.disable_bn()
         if self.config_args["model"].get("uncertainty", None):
             self.disable_dropout()
         metrics = Metrics(
-            self.metrics, self.prod_train_len, self.num_classes
-        )
+            self.metrics, self.prod_train_len, self.num_classes, threshold=0.5)
         loss, confid_loss = 0, 0
         len_steps, len_data = 0, 0
 
@@ -124,8 +124,15 @@ class SelfConfidLearner(AbstractLeaner):
             self.scheduler.step()
 
     def evaluate(self, dloader, len_dataset, split="test", verbose=False, **args):
+
+        if split == 'test':
+            threshold = self.determine_threshold()
+
+        else:
+            threshold = 0.5
+            
         self.model.eval()
-        metrics = Metrics(self.metrics, len_dataset, self.num_classes)
+        metrics = Metrics(self.metrics, len_dataset, self.num_classes, threshold)
         loss = 0
 
         # Evaluation loop
@@ -145,9 +152,72 @@ class SelfConfidLearner(AbstractLeaner):
                 metrics.update(pred, target, confidence)
 
         scores = metrics.get_scores(split=split)
+
         losses = {"loss_confid": loss}
         return losses, scores
 
+    @torch.no_grad()
+    def determine_threshold(self, max_threshold_step=.01):
+
+        LOGGER.info('Determining best threshold for specificity and sensitivity using validation dataset.')
+        
+        self.model.eval()
+
+        # NOTE: the actual threhsold step may be slightly lower than
+        # max_threshold_step due to roundoff
+        misclf_labels = []
+        meta_preds = []
+        for inps_b, gt_labels_b in self.val_loader:
+            
+            inps_b = inps_b.to(self.device)
+
+            base_preds_b, meta_preds_b = self.model(inps_b)
+            
+            base_pred_labels_b = torch.argmax(base_preds_b, dim=-1)
+                        
+            misclf_labels_b = (base_pred_labels_b == gt_labels_b).to(int)
+
+            meta_preds.append(torch.sigmoid(meta_preds_b))
+            misclf_labels.append(misclf_labels_b)
+    
+        meta_preds = torch.concat(meta_preds).detach().cpu().numpy()
+        misclf_labels = torch.concat(misclf_labels).detach().cpu().numpy()
+        
+        # determine how many elements we need for a pre-determined spacing
+        # between thresholds. Taken from:
+        # https://stackoverflow.com/a/70230433
+        num = round((meta_preds.max() - meta_preds.min()) / max_threshold_step) + 1 
+        thresholds = np.linspace(meta_preds.min(), meta_preds.max(), num, endpoint=True)
+
+        LOGGER.info(f'Determining best threshold for over {num} thresholds.')
+        
+        # compute performance over thresholds
+        threshold_to_metric = {}
+        for tau in thresholds:
+
+            predicted_labels = threshold(meta_preds, tau)
+
+            tn, fp, fn, tp = confusion_matrix(misclf_labels, predicted_labels).ravel()
+        
+            specificity_value = specificity(tn, fp)
+            sensitivity_value = sensitivity(tp, fn)
+
+            f_beta_spec_sens = f_score_sens_spec(sensitivity_value,
+                                                 specificity_value, beta=1.0)
+
+            print(f'tau: {tau:.6f}, spec: {specificity_value:.4f}, sens: {sensitivity_value:.4f}, f_beta: {f_beta_spec_sens:.4f}, balance: {abs(specificity_value-sensitivity_value):.4f}')
+        
+            threshold_to_metric[tau] = f_beta_spec_sens
+
+        # determine best threshold:
+        best_item = max(threshold_to_metric.items(), key=lambda x: x[1])
+
+        best_tau, best_metric = best_item
+        print(f'best | tau: {best_tau:.6f}, metric: {best_metric:.4f}', end='\n\n')
+
+        return best_item[0]
+        
+    
     def load_checkpoint(self, state_dict, uncertainty_state_dict=None, strict=True):
         if not uncertainty_state_dict:
             self.model.load_state_dict(state_dict, strict=strict)

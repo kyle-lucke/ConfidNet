@@ -30,6 +30,7 @@ def threshold(preds, tau):
 # beta > 1 gives more weight to specificity, while beta < 1 favors
 # sensitivity. For example, beta = 2 makes specificity twice as important as
 # sensitivity, while beta = 0.5 does the opposite.
+
 # eqn. source: F-score wikipedia page (https://en.wikipedia.org/wiki/F-score)
 def f_score_sens_spec(sensitivity, specificity, beta=1.0):
 
@@ -66,7 +67,7 @@ class Metrics:
 
     '''
     
-    def __init__(self, metrics, len_dataset, n_classes):
+    def __init__(self, metrics, len_dataset, n_classes, threshold):
         
         self.metrics = metrics
         self.len_dataset = len_dataset
@@ -79,6 +80,8 @@ class Metrics:
         self.fps = 0
         self.tns = 0
         self.fns = 0 
+
+        self.threshold = threshold
         
     def update(self, pred, target, confidence):
 
@@ -96,7 +99,7 @@ class Metrics:
         msclf_labels = pred == target
 
         # assume confidence is true probability value:
-        predicted_labels = threshold(confidence, tau=0.5)
+        predicted_labels = threshold(confidence, tau=self.threshold)
         
         tn, fp, fn, tp = confusion_matrix(msclf_labels, predicted_labels).ravel()
         
@@ -205,5 +208,9 @@ class Metrics:
             
             scores[f'{split}/sensitivity'] = {'value': sensitivity_value,
                                               'string': f'{sensitivity_value:.4f}' }
-                        
+
+            # save threshold used for testing
+            scores[f'{split}/threshold'] = {'value': self.threshold,
+                                            'string': f'{self.threshold:.6f}'}
+
         return scores

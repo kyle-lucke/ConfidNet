@@ -100,14 +100,16 @@ class Metrics:
 
         # assume confidence is true probability value:
         predicted_labels = threshold(confidence, tau=self.threshold)
+
+        if 'spec_sens' in self.metrics:
         
-        tn, fp, fn, tp = confusion_matrix(msclf_labels, predicted_labels).ravel()
+            tn, fp, fn, tp = confusion_matrix(msclf_labels, predicted_labels).ravel()
         
-        self.tps += tp
-        self.fps += fp
-        self.tns += tn
-        self.fns += fn
-        
+            self.tps += tp
+            self.fps += fp
+            self.tns += tn
+            self.fns += fn
+
         if "mean_iou" in self.metrics:
             pred = pred.cpu().numpy().flatten()
             target = target.cpu().numpy().flatten()

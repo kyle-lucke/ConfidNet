@@ -21,6 +21,8 @@ class SelfConfidLearner(AbstractLeaner):
         self.disable_bn(verbose=True)
         if self.config_args["model"].get("uncertainty", None):
             self.disable_dropout(verbose=True)
+
+        self.best_aupr_error = float('-inf')
             
     def train(self, epoch):
         self.model.train()
@@ -107,14 +109,14 @@ class SelfConfidLearner(AbstractLeaner):
         # Print metrics
         misc.print_dict(logs_dict)
 
-        if logs_dict["val/loss_confid"]["value"] < self.best_val_loss:
+        if logs_dict["val/ap_errors"]["value"] > self.best_aupr_error:
 
-            LOGGER.info(f'Validation loss improved from {self.best_val_loss:.4e} to {logs_dict["val/loss_confid"]["value"]:.4e}, saving model.')
+            LOGGER.info(f'Validation AP Error improved from {self.best_aupr_error:.4e} to {logs_dict["val/ap_errors"]["value"]:.4e}, saving model.')
             
             # Save the model checkpoint
             self.save_checkpoint(epoch)
 
-            self.best_val_loss = logs_dict["val/loss_confid"]['value']
+            self.best_aupr_error = logs_dict["val/ap_errors"]["value"]
             
         # CSV logging
         misc.csv_writter(path=self.output_folder / "logs.csv", dic=OrderedDict(logs_dict))

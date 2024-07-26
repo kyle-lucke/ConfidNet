@@ -56,8 +56,6 @@ class AbstractLeaner:
         self.device = device
         self.last_epoch = start_epoch - 2
         self.criterion, self.scheduler, self.optimizer, self.tb_logger = None, None, None, None
-
-        self.best_val_loss = float('inf')
         
         # Initialize model
         self.model = get_model(config_args, self.device).to(self.device)

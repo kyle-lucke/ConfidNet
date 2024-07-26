@@ -170,7 +170,8 @@ class SelfConfidLearner(AbstractLeaner):
         for inps_b, gt_labels_b in self.val_loader:
             
             inps_b = inps_b.to(self.device)
-
+            gt_labels_b = gt_labels_b.to(self.device)
+            
             base_preds_b, meta_preds_b = self.model(inps_b)
             
             base_pred_labels_b = torch.argmax(base_preds_b, dim=-1)

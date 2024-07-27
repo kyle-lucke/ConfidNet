@@ -1,0 +1,38 @@
+# Data parameters
+data:
+    dataset: svhn
+    data_dir: data/svhn-data
+    input_size: [32,32]
+    input_channels: 3
+    num_classes: 10
+    valid_size: 0.1
+
+# Training parameters
+training:
+    output_folder: results/logs/svhn/svhn_selfconfid-finetune
+    task: classification
+    learner: selfconfid
+    nb_epochs: 5
+    batch_size: 128
+    loss:
+        name: selfconfid_mse
+        weighting: 1
+    optimizer:
+        name: adam
+        lr: 0.00001
+    lr_schedule:
+    ft_on_val: False
+    metrics: ['accuracy', 'auc', 'ap_success', 'ap_errors']
+    pin_memory: False
+    num_workers: 3
+    augmentations:
+        normalize: [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]]
+
+# Model parameters
+model:
+    name: small_convnet_svhn_selfconfid_cloning
+    feature_dim: 512
+    resume: trained-base-models/svhn-cnn/best.pth
+		uncertainty: results/logs/svhn/svhn_selfconfid/best.pth
+
+seed: 0

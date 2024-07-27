@@ -1,0 +1,37 @@
+# Data parameters
+data:
+    dataset: cifar10
+    data_dir: data/cifar10-data
+    input_size: [32,32]
+    input_channels: 3
+    num_classes: 10
+    valid_size: 0.1
+
+# Training parameters
+training:
+    output_folder: results/logs/cifar10/cifar10_resnet32_selfconfid-finetune
+    task: classification
+    learner: selfconfid
+    nb_epochs: 5
+    batch_size: 128
+    loss:
+        name: selfconfid_mse
+        weighting: 1
+    optimizer:
+        name: adam
+        lr: 0.0001
+    lr_schedule:
+    ft_on_val: False
+    metrics: ['accuracy', 'auc', 'ap_success', 'ap_errors']
+    pin_memory: False
+    num_workers: 3
+    augmentations:
+        normalize: [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]]
+
+# Model parameters
+model:
+    name: resnet32_selfconfid_cloning
+    resume: trained-base-models/cifar10-resnet32/best.pth
+    uncertainty: results/logs/cifar10/cifar10_resnet32_selfconfid
+
+seed: 0

@@ -19,7 +19,7 @@ training:
         weighting: 1
     optimizer:
         name: adam
-        lr: 0.0001
+        lr: 0.00001
     lr_schedule:
     ft_on_val: False
     metrics: ['accuracy', 'auc', 'ap_success', 'ap_errors']
@@ -32,6 +32,5 @@ training:
 model:
     name: resnet32_selfconfid_cloning
     resume: trained-base-models/cifar10-resnet32/best.pth
-    uncertainty: results/logs/cifar10/cifar10_resnet32_selfconfid
-
+    uncertainty: results/logs/cifar10/cifar10_resnet32_selfconfid/best.pth
 seed: 0

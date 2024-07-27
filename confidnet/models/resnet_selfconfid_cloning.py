@@ -42,106 +42,25 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 from confidnet.models.model import AbstractModel
+from confident.models.resnet import resnet32
+from confident.models.resnet_selfconfid_classic import 
 
-__all__ = ['ResNet', 'resnet20', 'resnet32', 'resnet44', 'resnet56', 'resnet110', 'resnet1202']
-
-# def _weights_init(m):
-#     classname = m.__class__.__name__
-#     #print(classname)
-#     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
-#         init.kaiming_normal_(m.weight)
-
-class LambdaLayer(nn.Module):
-    def __init__(self, lambd):
-        super(LambdaLayer, self).__init__()
-        self.lambd = lambd
-
-    def forward(self, x):
-        return self.lambd(x)
-
-
-class BasicBlock(nn.Module):
-    expansion = 1
-
-    def __init__(self, in_planes, planes, stride=1, option='A'):
-        super(BasicBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes)
-
-        self.relu = nn.ReLU(inplace=True)
-        
-        self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != planes:
-            self.shortcut = LambdaLayer(lambda x:
-                                        F.pad(x[:, :, ::2, ::2], (0, 0, 0, 0, planes//4, planes//4), "constant", 0))
-
-    def forward(self, x):
-        out = self.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
-        out += self.shortcut(x)
-        out = self.relu(out)
-        return out
-
-
-class ResNetSelfConfidClassic(AbstractModel):
-    
+class ResNetSelfConfidCloning(AbstractModel):    
     def __init__(self, config_args, device, block, num_blocks):
         super().__init__(config_args, device)
-        self.in_planes = 16
 
-        self.conv1 = nn.Conv2d(config_args['data']['input_channels'], 16, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
-
-        self.linear1 = nn.Linear(64, 64)
-        self.linear2 = nn.Linear(64, config_args['data']['num_classes'])
-
-        self.uncertainty1 = nn.Linear(64, 400)
-        self.uncertainty2 = nn.Linear(400, 400)
-        self.uncertainty3 = nn.Linear(400, 400)
-        self.uncertainty4 = nn.Linear(400, 400)
-        self.uncertainty5 = nn.Linear(400, 1)
-        
-        self.relu = nn.ReLU(inplace=False)
-
-        self.pool = nn.AvgPool2d(8)
-        
-    def _make_layer(self, block, planes, num_blocks, stride):
-        strides = [stride] + [1]*(num_blocks-1)
-        layers = []
-        for stride in strides:
-            layers.append(block(self.in_planes, planes, stride))
-            self.in_planes = planes * block.expansion
-
-        return nn.Sequential(*layers)
+        self.pred_network = resnet32(config_args, device)
+        config_args["data"]["num_classes"] = 1
+        self.uncertainty_network = resnet32_selfconfid_classic(config_args, device)
 
     def forward(self, x):
-        out = self.relu(self.bn1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.pool(out)
-        out = torch.flatten(out, start_dim=1)
-        
-        out = self.relu(self.linear1(out))
+      pred = self.pred_network(x)
+      _, uncertainty = self.uncertainty_network(x)
+      return pred, uncertainty
 
-        uncertainty = F.relu(self.uncertainty1(out))
-        uncertainty = F.relu(self.uncertainty2(uncertainty))
-        uncertainty = F.relu(self.uncertainty3(uncertainty))
-        uncertainty = F.relu(self.uncertainty4(uncertainty))
-        uncertainty = self.uncertainty5(uncertainty)
-        
-        pred = self.linear2(out)
-        
-        return pred, uncertainty
-
-def resnet32_selfconfid_classic(config_args, device):
+def resnet32_selfconfid_cloning(config_args, device):
     raise NotImplementedError()
-    model = ResNetSelfConfidClassic(config_args, device, BasicBlock, [5, 5, 5]) 
+    model = ResNetSelfConfidCloning(config_args, device, BasicBlock, [5, 5, 5]) 
     return model
 
 if __name__ == "__main__":

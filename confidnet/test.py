@@ -31,13 +31,12 @@ def main():
     config_args["training"]["output_folder"] = Path(args.config_path).parent
 
     config_args["training"]["metrics"] = [
-        "accuracy",
         "auc",
         "ap_success",
         "ap_errors",
-        "fpr_at_95tpr",
-        "aurc",
-        "spec_sens"
+        "spec_sens",
+        'aupr_success',
+        'aupr_error'
     ]
 
     if config_args["training"]["task"] == "segmentation":

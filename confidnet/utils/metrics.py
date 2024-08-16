@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import average_precision_score, roc_auc_score, auc, confusion_matrix
+from sklearn.metrics import average_precision_score, roc_auc_score, auc, confusion_matrix, precision_recall_curve
 
 
 def _fast_hist(label_true, label_pred, n_class):
@@ -8,6 +8,10 @@ def _fast_hist(label_true, label_pred, n_class):
         n_class * label_true[mask].astype(int) + label_pred[mask], minlength=n_class ** 2
     ).reshape(n_class, n_class)
     return hist
+
+def aupr(labels, scores):
+    precision, recall, _  = precision_recall_curve(labels, scores)
+    return auc(recall, precision)
 
 # also known as recall or true positive rate (TPR)
 def sensitivity(tp, fn):
@@ -32,11 +36,11 @@ def threshold(preds, tau):
 # sensitivity, while beta = 0.5 does the opposite.
 
 # eqn. source: F-score wikipedia page (https://en.wikipedia.org/wiki/F-score)
-def f_score_sens_spec(sensitivity, specificity, beta=1.0):
+def f_score_sens_spec(sens, spec, beta=1.0):
 
     # return (1 + beta**2) * ( (precision * recall) / ( (beta**2 * precision) + recall ) )
 
-    return (1 + beta**2) * ( (sensitivity * specificity) / ( (beta**2 * sensitivity) + specificity ) )
+    return (1 + beta**2) * ( (sens * spec) / ( (beta**2 * sens) + spec ) )
 
 class Metrics:
 
@@ -129,30 +133,37 @@ class Metrics:
         if "accuracy" in self.metrics:
             accuracy = self.accuracy / self.len_dataset
             scores[f"{split}/accuracy"] = {"value": accuracy, "string": f"{accuracy:05.2%}"}
+            
         if "auc" in self.metrics:
             if len(np.unique(self.accurate)) == 1:
                 auc_score = 1
             else:
                 auc_score = roc_auc_score(self.accurate, self.proba_pred)
             scores[f"{split}/auc"] = {"value": auc_score, "string": f"{auc_score:05.2%}"}
+            
         if "ap_success" in self.metrics:
             ap_success = average_precision_score(self.accurate, self.proba_pred)
-            scores[f"{split}/ap_success"] = {"value": ap_success, "string": f"{ap_success:05.2%}"}
+            scores[f"{split}/ap_success"] = {"value": ap_success, "string": f"{ap_success:05.2%}"
+            }
+            
         if "accuracy_success" in self.metrics:
             accuracy_success = np.round(self.proba_pred[self.accurate == 1]).mean()
             scores[f"{split}/accuracy_success"] = {
                 "value": accuracy_success,
                 "string": f"{accuracy_success:05.2%}",
             }
+            
         if "ap_errors" in self.metrics:
             ap_errors = average_precision_score(self.errors, -self.proba_pred)
             scores[f"{split}/ap_errors"] = {"value": ap_errors, "string": f"{ap_errors:05.2%}"}
+            
         if "accuracy_errors" in self.metrics:
             accuracy_errors = 1.0 - np.round(self.proba_pred[self.errors == 1]).mean()
             scores[f"{split}/accuracy_errors"] = {
                 "value": accuracy_errors,
                 "string": f"{accuracy_errors:05.2%}",
             }
+            
         if "fpr_at_95tpr" in self.metrics:
             for i,delta in enumerate(np.arange(
                 self.proba_pred.min(),
@@ -174,6 +185,7 @@ class Metrics:
                     ) / len(self.proba_pred[(self.errors == 1)])
                     scores[f"{split}/fpr_at_95tpr"] = {"value": fpr, "string": f"{fpr:05.2%}"}
                     break
+                
         if "mean_iou" in self.metrics:
             iou = np.diag(self.confusion_matrix) / (
                 self.confusion_matrix.sum(axis=1)
@@ -215,4 +227,14 @@ class Metrics:
             scores[f'{split}/threshold'] = {'value': self.threshold,
                                             'string': f'{self.threshold:.6f}'}
 
+        if 'aupr_success' in self.metrics:
+            aupr_success = aupr(self.accurate, self.proba_pred)
+            scores[f"{split}/aupr_success"] = {"value": aupr_success,
+                                               "string": f"{aupr_success:05.2%}"}
+
+        if 'aupr_error' in self.metrics:
+            aupr_errors = aupr(self.errors, -self.proba_pred)
+            scores[f"{split}/aupr_errors"] = {"value": aupr_errors,
+                                              "string": f"{aupr_errors:05.2%}"}
+            
         return scores

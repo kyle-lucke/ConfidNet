@@ -31,9 +31,9 @@ def main():
     config_args["training"]["output_folder"] = Path(args.config_path).parent
 
     config_args["training"]["metrics"] = [
-        "auc",
+        "roc_auc",
         "ap_success",
-        "ap_errors",
+        "ap_error",
         "spec_sens",
         'aupr_success',
         'aupr_error'

@@ -134,7 +134,7 @@ class Metrics:
             accuracy = self.accuracy / self.len_dataset
             scores[f"{split}/accuracy"] = {"value": accuracy, "string": f"{accuracy:05.2%}"}
             
-        if "auc" in self.metrics:
+        if "roc_auc" in self.metrics:
             if len(np.unique(self.accurate)) == 1:
                 auc_score = 1
             else:
@@ -153,9 +153,9 @@ class Metrics:
                 "string": f"{accuracy_success:05.2%}",
             }
             
-        if "ap_errors" in self.metrics:
-            ap_errors = average_precision_score(self.errors, -self.proba_pred)
-            scores[f"{split}/ap_errors"] = {"value": ap_errors, "string": f"{ap_errors:05.2%}"}
+        if "ap_error" in self.metrics:
+            ap_error = average_precision_score(self.errors, -self.proba_pred)
+            scores[f"{split}/ap_error"] = {"value": ap_error, "string": f"{ap_error:05.2%}"}
             
         if "accuracy_errors" in self.metrics:
             accuracy_errors = 1.0 - np.round(self.proba_pred[self.errors == 1]).mean()
@@ -233,8 +233,8 @@ class Metrics:
                                                "string": f"{aupr_success:05.2%}"}
 
         if 'aupr_error' in self.metrics:
-            aupr_errors = aupr(self.errors, -self.proba_pred)
-            scores[f"{split}/aupr_errors"] = {"value": aupr_errors,
-                                              "string": f"{aupr_errors:05.2%}"}
+            aupr_error = aupr(self.errors, -self.proba_pred)
+            scores[f"{split}/aupr_error"] = {"value": aupr_error,
+                                              "string": f"{aupr_error:05.2%}"}
             
         return scores

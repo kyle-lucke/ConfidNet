@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import average_precision_score, roc_auc_score, auc, confusion_matrix, precision_recall_curve
+from sklearn.metrics import average_precision_score, roc_auc_score, auc, confusion_matrix, precision_recall_curve, precision_score, recall_score, f1_score
 
 
 def _fast_hist(label_true, label_pred, n_class):
@@ -67,7 +67,7 @@ class Metrics:
 
     self.tps, self.fps, self.tns, self.fns: accumulated number number
     of true positivies, false positives, true negatives, and false
-    negatives, respectively for miscalssication prediction
+    negatives, respectively for misclassification prediction
 
     '''
     
@@ -235,6 +235,28 @@ class Metrics:
         if 'aupr_error' in self.metrics:
             aupr_error = aupr(self.errors, -self.proba_pred)
             scores[f"{split}/aupr_error"] = {"value": aupr_error,
-                                              "string": f"{aupr_error:05.2%}"}
+                                             "string": f"{aupr_error:05.2%}"}
+
+        if 'recall' in self.metrics:
+            predicted_labels = threshold(self.proba_pred, self.threshold)
+            recall = recall_score(self.accurate, predicted_labels)
+
+            scores[f"{split}/recall"] = {"value": recall,
+                                         "string": f"{recall:05.2%}"}
             
+        if 'precision' in self.metrics:
+            predicted_labels = threshold(self.proba_pred, self.threshold)
+            precision = precision_score(self.accurate, predicted_labels)
+
+            scores[f"{split}/precision"] = {"value": precision,
+                                            "string": f"{precision:05.2%}"}
+
+        if 'f1_score' in self.metrics:
+            predicted_labels = threshold(self.proba_pred, self.threshold)
+            f1_value = f1_score(self.accurate, predicted_labels)
+
+            scores[f"{split}/f1_score"] = {"value": f1_value,
+                                            "string": f"{f1_value:05.2%}"}
+
+
         return scores

@@ -36,7 +36,10 @@ def main():
         "ap_error",
         "spec_sens",
         'aupr_success',
-        'aupr_error'
+        'aupr_error',
+        'recall',
+        'precision',
+        'f1_score'
     ]
 
     if config_args["training"]["task"] == "segmentation":
@@ -82,7 +85,7 @@ def main():
     
     json.dump(save_scores,
               open(os.path.join(config_args["training"]["output_folder"],
-                                'test_metrics.json'), 'w'))
+                                'test_metrics_redo.json'), 'w'))
 
 if __name__ == "__main__":
     main()
